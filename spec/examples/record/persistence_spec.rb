@@ -103,6 +103,13 @@ describe Cequel::Record::Persistence do
           }.to raise_error(ArgumentError)
         end
 
+        it 'should allow setting a key value to the same thing it already is' do
+          expect {
+            blog.subdomain = 'cequel'
+            blog.save
+          }.to_not raise_error
+        end
+
         it 'should save with specified consistency' do
           expect_query_with_consistency(/UPDATE/, :one) do
             blog.name = 'Cequel'
@@ -124,6 +131,23 @@ describe Cequel::Record::Persistence do
           expect(cequel[Blog.table_name].select_timestamp(:name).first.timestamp(:name))
             .to eq((timestamp.to_f * 1_000_000).to_i)
           Blog.connection.schema.truncate_table(Blog.table_name)
+        end
+
+        it 'should not query database if no attributes have been changed' do
+          disallow_queries!
+          blog.save
+        end
+
+        it 'should not mark itself as clean if save failed at Cassandra level' do
+          blog.name = 'Pizza'
+          with_client_error(Cql::QueryError.new(1, 'error')) do
+            begin
+              blog.save
+            rescue Cql::QueryError
+            end
+          end
+          blog.save
+          subject[:name].should == 'Pizza'
         end
       end
     end
