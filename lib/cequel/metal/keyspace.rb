@@ -1,5 +1,6 @@
 # -*- encoding : utf-8 -*-
 require 'set'
+require 'retryable'
 
 module Cequel
   module Metal
@@ -27,6 +28,7 @@ module Cequel
       # @since 1.1.0
       attr_writer :default_consistency
       attr_writer :default_timeout
+      attr_writer :default_tries
       # @return [Hash] credentials for connect to cassandra
       attr_reader :credentials
 
@@ -126,6 +128,7 @@ module Cequel
         @name = configuration[:keyspace]
         @default_consistency = configuration[:default_consistency].try(:to_sym)
         @default_timeout = configuration[:default_timeout]
+        @default_tries = configuration[:default_tries]
         # reset the connections
         clear_active_connections!
       end
@@ -196,9 +199,11 @@ module Cequel
       #
       def execute_with_consistency(statement, bind_vars, consistency)
         log('CQL', statement, *bind_vars) do
-          client.execute(sanitize(statement, bind_vars),
-                         {consistency: consistency || default_consistency,
-                          timeout: default_timeout})
+          retryable(tries: default_tries, on: Cql::TimeoutError) do
+            client.execute(sanitize(statement, bind_vars),
+                           {consistency: consistency || default_consistency,
+                            timeout: default_timeout})
+          end
         end
       end
 
@@ -223,6 +228,10 @@ module Cequel
 
       def default_timeout
         @default_timeout
+      end
+
+      def default_tries
+        @default_tries || 1
       end
 
       # @return [Boolean] true if the keyspace exists
