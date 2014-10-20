@@ -199,7 +199,7 @@ module Cequel
       #
       def execute_with_consistency(statement, bind_vars, consistency)
         log('CQL', statement, *bind_vars) do
-          retryable(tries: default_tries, on: Cql::TimeoutError) do
+          retryable(tries: default_tries, on: [Cql::TimeoutError, Cql::Protocol::DecodingError]) do
             client.execute(sanitize(statement, bind_vars),
                            {consistency: consistency || default_consistency,
                             timeout: default_timeout})
