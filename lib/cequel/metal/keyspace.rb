@@ -1,6 +1,5 @@
 # -*- encoding : utf-8 -*-
 require 'set'
-require 'retryable'
 
 module Cequel
   module Metal
@@ -24,11 +23,12 @@ module Cequel
       attr_reader :port
       # @return Integer maximum number of retries to reconnect to Cassandra
       attr_reader :max_retries
+      # @return Float delay between retries to reconnect to Cassandra
+      attr_reader :retry_delay
       # @return [Symbol] the default consistency for queries in this keyspace
       # @since 1.1.0
       attr_writer :default_consistency
       attr_writer :default_timeout
-      attr_writer :default_tries
       # @return [Hash] credentials for connect to cassandra
       attr_reader :credentials
 
@@ -124,6 +124,7 @@ module Cequel
         @hosts, @port = extract_hosts_and_port(configuration)
         @credentials  = extract_credentials(configuration)
         @max_retries  = extract_max_retries(configuration)
+        @retry_delay  = extract_retry_delay(configuration)
 
         @name = configuration[:keyspace]
         @default_consistency = configuration[:default_consistency].try(:to_sym)
@@ -175,16 +176,7 @@ module Cequel
       # @see #execute_with_consistency
       #
       def execute(statement, *bind_vars)
-        retries = max_retries
-
-        begin
-          execute_with_consistency(statement, bind_vars, default_consistency)
-        rescue Cql::NotConnectedError, Ione::Io::ConnectionError
-          clear_active_connections!
-          raise if retries < 0
-          retries -= 1
-          retry
-        end
+        execute_with_consistency(statement, bind_vars, default_consistency)
       end
 
       #
@@ -198,11 +190,19 @@ module Cequel
       # @since 1.1.0
       #
       def execute_with_consistency(statement, bind_vars, consistency)
+        retries = max_retries
+
         log('CQL', statement, *bind_vars) do
-          retryable(tries: default_tries, on: [Cql::TimeoutError, Cql::Protocol::DecodingError]) do
+          begin
             client.execute(sanitize(statement, bind_vars),
                            {consistency: consistency || default_consistency,
                             timeout: default_timeout})
+          rescue Cql::NotConnectedError, Ione::Io::ConnectionError, Cql::TimeoutError, Cql::Protocol::DecodingError
+            clear_active_connections!
+            raise if retries == 0
+            retries -= 1
+            sleep(retry_delay)
+            retry
           end
         end
       end
@@ -310,6 +310,10 @@ module Cequel
 
       def extract_max_retries(configuration)
         configuration.fetch(:max_retries, 3)
+      end
+
+      def extract_retry_delay(configuration)
+        configuration.fetch(:retry_delay, 0.5)
       end
     end
   end

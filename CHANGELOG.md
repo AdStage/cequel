@@ -1,3 +1,17 @@
+## 1.4.5
+
+* Fix recovery from connection error
+
+## 1.4.4
+
+* Round time to nearest millisecond when serializing for CQL
+
+## 1.4.3
+
+* Make Rake tasks work without Rails
+* `RecordSet#reverse` and `find_in_batches` respect clustering order defined in
+  schema
+
 ## 1.4.2
 
 * Allow setting a key attribute to what it already is
