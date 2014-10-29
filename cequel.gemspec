@@ -28,7 +28,6 @@ DESC
   s.required_ruby_version = '>= 1.9'
   s.add_runtime_dependency 'activemodel', '>= 3.1', '< 5.0'
   s.add_runtime_dependency 'cql-rb', '>= 1.2', '< 3.0'
-  s.add_runtime_dependency 'retryable', '~> 1.3'
   s.add_development_dependency 'appraisal', '~> 1.0'
   s.add_development_dependency 'wwtd', '~> 0.5'
   s.add_development_dependency 'rake', '~> 10.1'

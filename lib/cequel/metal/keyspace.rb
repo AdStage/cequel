@@ -129,7 +129,6 @@ module Cequel
         @name = configuration[:keyspace]
         @default_consistency = configuration[:default_consistency].try(:to_sym)
         @default_timeout = configuration[:default_timeout]
-        @default_tries = configuration[:default_tries]
         # reset the connections
         clear_active_connections!
       end
@@ -231,10 +230,6 @@ module Cequel
 
       def default_timeout
         @default_timeout
-      end
-
-      def default_tries
-        @default_tries || 1
       end
 
       # @return [Boolean] true if the keyspace exists
