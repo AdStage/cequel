@@ -155,9 +155,7 @@ module Cequel
       #
       def client
         synchronize do
-          @client ||= raw_client.tap do |client|
-            client.use(name) if name
-          end
+          @client ||= cluster.connect(name)
         end
       end
 
@@ -196,7 +194,7 @@ module Cequel
             client.execute(sanitize(statement, bind_vars),
                            {consistency: consistency || default_consistency,
                             timeout: default_timeout})
-          rescue Cql::NotConnectedError, Ione::Io::ConnectionError, Cql::TimeoutError, Cql::Protocol::DecodingError
+          rescue Cassandra::Errors::NoHostsAvailable, Cassandra::Errors::IOError, Ione::Io::ConnectionError, Cassandra::Errors::TimeoutError, Cassandra::Errors::DecodingError
             clear_active_connections!
             raise if retries == 0
             retries -= 1
@@ -214,9 +212,6 @@ module Cequel
       def clear_active_connections!
         if defined? @client
           remove_instance_variable(:@client)
-        end
-        if defined? @raw_client
-          remove_instance_variable(:@raw_client)
         end
       end
 
@@ -241,7 +236,11 @@ module Cequel
         CQL
 
         log('CQL', statement, [name]) do
-          raw_client.execute(sanitize(statement, [name])).any?
+          begin
+            client.execute(sanitize(statement, [name])).any?
+          rescue Cassandra::Errors::InvalidError
+            false
+          end
         end
       end
 
@@ -255,15 +254,15 @@ module Cequel
       def_delegator :lock, :synchronize
       private :lock
 
-      def raw_client
+      def cluster
         synchronize do
-          @raw_client ||= Cql::Client.connect(client_options)
+          @cluster ||= Cassandra.cluster(client_options)
         end
       end
 
       def client_options
         {hosts: hosts, port: port}.tap do |options|
-          options[:credentials] = credentials if credentials
+          options.merge!(credentials) if credentials
         end
       end
 

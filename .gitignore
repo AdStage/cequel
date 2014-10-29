@@ -9,3 +9,4 @@ gemfiles/*.gemfile.lock
 .ruby-version
 *~
 *.swp
+vendor/bundle

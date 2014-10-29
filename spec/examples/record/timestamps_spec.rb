@@ -14,7 +14,15 @@ describe Cequel::Record::Timestamps do
     timestamps
   end
 
-  let!(:now) { Timecop.freeze }
+  before do
+    Timecop.freeze
+  end
+
+  after do
+    Timecop.return
+  end
+
+  let(:now) { Time.now }
 
   context 'with simple primary key' do
     let(:blog) { Blog.create!(subdomain: 'bigdata') }
@@ -28,7 +36,7 @@ describe Cequel::Record::Timestamps do
     end
 
     it 'should update updated_at after record update but not created_at' do
-      future = Timecop.freeze(now + 2.minutes)
+      future = now
       blog.name = 'name'
       blog.save!
       expect(blog.updated_at).to eq(future)
@@ -51,7 +59,7 @@ describe Cequel::Record::Timestamps do
     end
 
     it 'should update updated_at after record update but not created_at' do
-      future = Timecop.freeze(now + 2.minutes)
+      future = now
       post.name = 'name'
       post.save!
       expect(post.updated_at).to eq(future)
