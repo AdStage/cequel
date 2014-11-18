@@ -101,6 +101,9 @@ module NewRelic
           end
         end
 
+        add_method_tracer :execute_with_consistency,
+                          'Database/Cassandra/#{args[0][/^[A-Z ]*[A-Z]/]' \
+                          '.sub(/ FROM$/, \'\')}'
       end
     end
   end
