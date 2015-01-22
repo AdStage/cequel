@@ -29,6 +29,13 @@ describe Cequel::Record::Map do
   end
 
   context 'updating' do
+    it 'should allow multiple updates to value correctly' do
+      post.likes = {'charlotte' => 3, 'dave' => 4}
+      post.likes = {'bill' => 3, 'bob' => 4}
+      post.save!
+      expect(subject[:likes]).to eq({'bill' => 3, 'bob' => 4})
+    end
+
     it 'should overwrite value' do
       post.likes = {'charlotte' => 3, 'dave' => 4}
       post.save!
@@ -46,10 +53,22 @@ describe Cequel::Record::Map do
     before { scope.map_update(:likes, 'charles' => 3) }
 
     describe '#[]=' do
+      it 'should atomically update even when edited many times' do
+        post.likes['david'] = 4
+        post.likes['david'] = 8
+        post.likes['david'] = 16
+        post.likes['david'] = 3
+        post.likes['david'] = 7
+        post.save
+        expect(subject[:likes]).to eq(
+          {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 7}
+        )
+        expect(post.likes).to eq({'alice' => 1, 'bob' => 2, 'david' => 7})
+      end
       it 'should atomically update' do
         post.likes['david'] = 4
         post.save
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4}
         )
         expect(post.likes).to eq({'alice' => 1, 'bob' => 2, 'david' => 4})
@@ -135,7 +154,7 @@ describe Cequel::Record::Map do
       it 'should atomically update' do
         post.likes.merge!('david' => 4, 'emily' => 5)
         post.save
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4, 'emily' => 5}
         )
         expect(post.likes).to eq(
@@ -152,7 +171,7 @@ describe Cequel::Record::Map do
       it 'should cast values before updating' do
         post.likes.merge!('david' => '4', 'emily' => 5.0)
         post.save
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4, 'emily' => 5}
         )
         expect(post.likes).to eq(
@@ -214,7 +233,7 @@ describe Cequel::Record::Map do
       it 'should atomically update' do
         post.likes.store('david', 4)
         post.save
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4}
         )
         expect(post.likes).to eq({'alice' => 1, 'bob' => 2, 'david' => 4})
@@ -225,7 +244,7 @@ describe Cequel::Record::Map do
           unloaded_post.likes.store('david', 4)
           unloaded_post.save
         end
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4}
         )
       end
@@ -241,7 +260,7 @@ describe Cequel::Record::Map do
       it 'should atomically update' do
         post.likes.update('david' => 4, 'emily' => 5)
         post.save
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4, 'emily' => 5}
         )
         expect(post.likes).to eq(
@@ -253,7 +272,7 @@ describe Cequel::Record::Map do
           unloaded_post.likes.update('david' => 4, 'emily' => 5)
           unloaded_post.save
         end
-        expect(subject[:likes]).to eq( 
+        expect(subject[:likes]).to eq(
           {'alice' => 1, 'bob' => 2, 'charles' => 3, 'david' => 4, 'emily' => 5}
         )
       end
