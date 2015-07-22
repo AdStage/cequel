@@ -265,7 +265,7 @@ module Cequel
 
       def client_options
         {hosts: hosts, port: port}.tap do |options|
-          options.merge!(credentials) if credentials
+          options.merge!(credentials) if credentials && credentials[:username]
         end
       end
 
