@@ -136,8 +136,7 @@ module Cequel
       def expect_query_with_consistency(matcher, consistency)
         allow(cequel.client).to receive(:execute).and_call_original
         yield
-        expect(cequel.client).to have_received(:execute).
-          with(matcher, hash_including(:consistency => consistency))
+        expect(cequel.client).to have_received(:execute).with(matcher, include(consistency: consistency))
       end
     end
   end

@@ -28,6 +28,7 @@ module Cequel
       # @return [Symbol] the default consistency for queries in this keyspace
       # @since 1.1.0
       attr_writer :default_consistency
+      attr_writer :default_timeout
       # @return [Hash] credentials for connect to cassandra
       attr_reader :credentials
 
@@ -127,7 +128,7 @@ module Cequel
 
         @name = configuration[:keyspace]
         @default_consistency = configuration[:default_consistency].try(:to_sym)
-
+        @default_timeout = configuration[:default_timeout]
         # reset the connections
         clear_active_connections!
       end
@@ -191,7 +192,8 @@ module Cequel
         log('CQL', statement, *bind_vars) do
           begin
             client.execute(sanitize(statement, bind_vars),
-                           consistency: consistency || default_consistency)
+                           {consistency: consistency || default_consistency,
+                            timeout: default_timeout})
           rescue Cassandra::Errors::NoHostsAvailable,
                  Ione::Io::ConnectionError => e
             clear_active_connections!
@@ -226,6 +228,10 @@ module Cequel
       #
       def default_consistency
         @default_consistency || :quorum
+      end
+
+      def default_timeout
+        @default_timeout
       end
 
       # @return [Boolean] true if the keyspace exists
