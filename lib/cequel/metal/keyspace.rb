@@ -214,12 +214,6 @@ module Cequel
         if defined? @client
           remove_instance_variable(:@client)
         end
-        if defined? @client_without_keyspace
-          remove_instance_variable(:@client_without_keyspace)
-        end
-        if defined? @cluster
-          remove_instance_variable(:@cluster)
-        end
       end
 
       #
