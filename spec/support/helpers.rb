@@ -3,7 +3,8 @@ module Cequel
   module SpecSupport
     module Macros
       def model(class_name, options = {}, &block)
-        return if RSpec.configuration.filter_manager.exclude?(self)
+        return if RSpec.configuration.filter_manager.exclusions
+          .include_example?(self)
         setup_models = !self.metadata.key?(:models)
         self.metadata[:models] ||= {}
 
@@ -97,12 +98,12 @@ module Cequel
       end
 
       def min_uuid(time = Time.now)
-        Cql::TimeUuid::Generator.new(0, 0).from_time(time, 0)
+        Cassandra::TimeUuid::Generator.new(0, 0).at(time, 0)
       end
 
       def max_uuid(time = Time.now)
-        Cql::TimeUuid::Generator.new(0x3fff, 0xffffffffffff).
-          from_time(time, 999)
+        Cassandra::TimeUuid::Generator.new(0x3fff, 0xffffffffffff).
+          at(time, 999)
       end
 
       def cequel

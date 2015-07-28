@@ -256,11 +256,12 @@ module Cequel
       end
 
       #
-      # @return [Hash<Symbol,Object>] map of column names to values currently
+      # @return [Hash<String,Object>] map of column names to values currently
       #   set on this record
       #
       def attributes
-        attribute_names.each_with_object({}) do |name, attributes|
+        attribute_names
+          .each_with_object(HashWithIndifferentAccess.new) do |name, attributes|
           attributes[name] = read_attribute(name)
         end
       end
@@ -370,8 +371,8 @@ module Cequel
       def initialize_new_record(attributes = {})
         dynamic_defaults = default_attributes
           .select { |name, value| value.is_a?(Proc) }
-        new_attributes = Marshal.load(Marshal.dump(
-          default_attributes.except(*dynamic_defaults.keys)))
+        new_attributes =
+          Util.deep_copy(default_attributes.except(*dynamic_defaults.keys))
         dynamic_defaults.each { |name, p| new_attributes[name] = p.call }
         init_attributes(new_attributes)
 
