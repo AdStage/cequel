@@ -16,18 +16,13 @@ module NewRelic
         module_function
 
         def metric_for_sql(sql) #THREAD_LOCAL_ACCESS
-          txn = NewRelic::Agent::Transaction.tl_current
-          metric = txn && txn.database_metric_name
-          if metric.nil?
-            operation = NewRelic::Agent::Database.parse_operation_from_query(sql)
-            if operation
-              # Could not determine the model/operation so use a fallback metric
-              metric = "Database/CQL/#{operation}"
-            else
-              metric = "Database/CQL/other"
-            end
+          operation = NewRelic::Agent::Database.parse_operation_from_query(sql)
+          if operation
+            # Could not determine the model/operation so use a fallback metric
+            "Database/CQL/#{operation}"
+          else
+            "Database/CQL/other"
           end
-          metric
         end
 
         # Given a metric name such as "ActiveRecord/model/action" this
